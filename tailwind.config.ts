@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -62,7 +61,10 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				}
+				},
+				// Define music-primary and music-secondary as direct color values instead of HSL variables
+				'music-primary': 'hsl(257, 70%, 50%)',
+				'music-secondary': 'hsl(200, 70%, 50%)'
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

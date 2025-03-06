@@ -38,19 +38,12 @@
     --radius: 0.75rem;
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
 
     --music-primary: 257 70% 50%;
@@ -97,7 +90,7 @@
   }
 
   .chat-bubble.user {
-    @apply bg-music-primary/10 text-music-primary;
+    @apply bg-[#a57bfc]/10 text-[#8b47ff];
   }
 
   .chat-bubble.ai {
@@ -110,6 +103,6 @@
   }
 
   .audio-bar {
-    @apply w-1 bg-music-primary rounded-t-sm;
+    @apply w-1 bg-[#8b47ff] rounded-t-sm;
   }
 }
