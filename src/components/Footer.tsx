@@ -12,13 +12,13 @@ const Footer: React.FC = () => {
             </p>
           </div>
           <div className="flex space-x-6">
-            <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-all-250">
+            <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-all duration-250 ease-in-out">
               Terms
             </a>
-            <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-all-250">
+            <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-all duration-250 ease-in-out">
               Privacy
             </a>
-            <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-all-250">
+            <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-all duration-250 ease-in-out">
               Support
             </a>
           </div>
