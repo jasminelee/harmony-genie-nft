@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -14,6 +13,7 @@ interface TrackData {
     title: string;
     genre: string;
     mood?: string;
+    lyrics?: string;
   };
 }
 
@@ -23,12 +23,21 @@ const Index = () => {
   const [showChat, setShowChat] = useState(false);
 
   const handleMusicGenerated = (trackUrl: string, metadata: any) => {
+    console.log('Music generated with URL:', trackUrl);
+    console.log('Music metadata:', metadata);
+    
+    if (!trackUrl) {
+      console.error('No track URL provided');
+      return;
+    }
+    
     setTrack({
       url: trackUrl,
       metadata: {
-        title: metadata.title,
-        genre: metadata.genre,
-        mood: metadata.mood
+        title: metadata.title || 'Generated Song',
+        genre: metadata.genre || 'AI Music',
+        mood: metadata.mood || 'Custom',
+        lyrics: metadata.lyrics
       }
     });
   };

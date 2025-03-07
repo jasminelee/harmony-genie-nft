@@ -5,6 +5,8 @@
  * for music generation in the harmony-genie-nft application.
  */
 
+import { generateMusic, extractMusicParameters } from './piApiClient';
+
 // Types for Eliza API responses
 export interface ElizaResponse {
   id: string;
@@ -16,12 +18,96 @@ export interface ElizaResponse {
       genre: string;
       mood: string;
       duration?: number;
-      bpm?: number;
-      key?: string;
+      lyrics?: string;
+      status?: string;
+      taskId?: string;
     };
   };
   createdAt: number;
   user: string;
+}
+
+/**
+ * Extract PiAPI parameters from Eliza's response and user message
+ * @param userMessage - The original user message
+ * @param elizaText - Eliza's response text
+ * @returns Object with parameters for PiAPI
+ */
+function extractPiApiParameters(userMessage: string, elizaText: string): {
+  prompt: string;
+  model: 'music-s' | 'music-u';
+  negative_tags: string;
+  tags: string;
+  title: string;
+  make_instrumental: boolean;
+  lyrics_type: 'generate' | 'user' | 'instrumental';
+} {
+  // Extract basic music parameters
+  const userParams = extractMusicParameters(userMessage);
+  const elizaParams = extractMusicParameters(elizaText);
+  
+  // Combine parameters, preferring user parameters when available
+  const genre = userParams.genre || elizaParams.genre || '';
+  const mood = userParams.mood || elizaParams.mood || '';
+  const tags = [...(userParams.tags || []), ...(elizaParams.tags || [])];
+  const uniqueTags = [...new Set(tags)]; // Remove duplicates
+  
+  // Determine if instrumental
+  const makeInstrumental = userParams.instrumental || elizaParams.instrumental || false;
+  
+  // Create a rich prompt combining user request and Eliza's creative input
+  let prompt = userMessage;
+  if (elizaText && !elizaText.includes("couldn't generate a proper response")) {
+    // Extract the most descriptive parts of Eliza's response
+    const descriptiveParts = elizaText
+      .split('.')
+      .filter(part => 
+        part.toLowerCase().includes('genre') || 
+        part.toLowerCase().includes('mood') || 
+        part.toLowerCase().includes('style') ||
+        part.toLowerCase().includes('sound') ||
+        part.toLowerCase().includes('feel')
+      )
+      .join('. ');
+    
+    if (descriptiveParts) {
+      prompt = `${userMessage}. ${descriptiveParts}`;
+    }
+  }
+  
+  // Extract title from the message if possible
+  const titleMatch = userMessage.match(/title:?\s*["']?([^"']+)["']?/i);
+  const title = titleMatch ? titleMatch[1].trim() : '';
+  
+  // Determine lyrics type
+  let lyricsType: 'generate' | 'user' | 'instrumental' = 'generate';
+  if (makeInstrumental) {
+    lyricsType = 'instrumental';
+  } else if (userMessage.toLowerCase().includes('my lyrics') || 
+             userMessage.toLowerCase().includes('these lyrics') ||
+             userMessage.toLowerCase().includes('with lyrics:')) {
+    lyricsType = 'user';
+  }
+  
+  // Determine model - default to music-s (Suno)
+  const model: 'music-s' | 'music-u' = 
+    userMessage.toLowerCase().includes('udio') ? 'music-u' : 'music-s';
+  
+  // Extract negative tags
+  const negativeTagsMatch = userMessage.match(/no\s+([a-z\s,]+)/i) || 
+                           userMessage.match(/without\s+([a-z\s,]+)/i) ||
+                           userMessage.match(/negative:?\s*["']?([^"']+)["']?/i);
+  const negativeTags = negativeTagsMatch ? negativeTagsMatch[1].trim() : '';
+  
+  return {
+    prompt,
+    model,
+    negative_tags: negativeTags,
+    tags: uniqueTags.join(', '),
+    title,
+    make_instrumental: makeInstrumental,
+    lyrics_type: lyricsType
+  };
 }
 
 // API client for communicating with the Eliza agent
@@ -31,7 +117,7 @@ export const elizaApiClient = {
    * @param message - The user's message to send to the agent
    * @returns Promise with the agent's response
    */
-  sendMessage: async (message: string): Promise<ElizaResponse> => {
+  sendMessage: async (message: string, onStatusUpdate?: (status: string) => void): Promise<ElizaResponse> => {
     try {
       // Get the available agents first to ensure we're using a valid agent ID
       let agentId = 'b850bc30-45f8-0041-a00a-83df46d8555d'; // Default Eliza agent ID
@@ -66,7 +152,7 @@ export const elizaApiClient = {
         throw new Error(`Failed to send message to Eliza agent: ${response.status} ${response.statusText}`);
       }
       
-      // Process the response to add music generation capabilities
+      // Process the response to add music generation
       const responseText = await response.text();
       console.log('Raw response from Eliza:', responseText);
       
@@ -94,27 +180,62 @@ export const elizaApiClient = {
         };
       }
       
-      // If the message is about music generation, add music content
+      // If the message is about music generation, generate music with PiAPI
       if (isMusicGenerationRequest(message) && elizaResponse.content) {
-        // Extract music details from the response text or the original message
-        const responseText = elizaResponse.content.text || "";
-        const musicDetails = extractMusicDetails(responseText, message);
-        
-        console.log('Extracted music details:', musicDetails);
-        
-        // Add music content to the response
-        elizaResponse.content.music = {
-          url: "https://example.com/generated-music.mp3", // This would be a real URL in production
-          title: musicDetails.title,
-          genre: musicDetails.genre,
-          mood: musicDetails.mood,
-          bpm: musicDetails.bpm,
-          key: musicDetails.key
-        };
-        
-        // If there's no text in the response, add a default message
-        if (!elizaResponse.content.text) {
-          elizaResponse.content.text = `I've created a ${musicDetails.mood} ${musicDetails.genre} track called "${musicDetails.title}" for you. It's in ${musicDetails.key} with a tempo of ${musicDetails.bpm} BPM. Would you like to mint this as an NFT?`;
+        try {
+          // Extract parameters for PiAPI from the user message and Eliza's response
+          const elizaText = elizaResponse.content.text || '';
+          const piApiParams = extractPiApiParameters(message, elizaText);
+          console.log('Extracted PiAPI parameters:', piApiParams);
+          
+          // Add initial music content to the response with pending status
+          elizaResponse.content.music = {
+            url: "",
+            title: piApiParams.title || "Generating your song...",
+            genre: piApiParams.tags.split(',')[0] || "Unknown",
+            mood: extractMusicParameters(message).mood || "Unknown",
+            status: "pending"
+          };
+          
+          // Start the music generation process
+          if (onStatusUpdate) {
+            onStatusUpdate('Starting music generation...');
+          }
+          
+          // Generate music with PiAPI (this will be handled asynchronously)
+          generateMusic(piApiParams.prompt, {
+            model: piApiParams.model,
+            negative_tags: piApiParams.negative_tags,
+            tags: piApiParams.tags,
+            title: piApiParams.title,
+            make_instrumental: piApiParams.make_instrumental,
+            lyrics_type: piApiParams.lyrics_type,
+            onStatusUpdate: (status) => {
+              if (onStatusUpdate) {
+                onStatusUpdate(status);
+              }
+              
+              // Extract task ID from status message if available
+              const taskIdMatch = status.match(/Task created: ([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i);
+              if (taskIdMatch && taskIdMatch[1] && elizaResponse.content.music) {
+                elizaResponse.content.music.taskId = taskIdMatch[1];
+              }
+            }
+          }).then(result => {
+            // This will be handled by the polling mechanism in the Chat component
+            console.log('Music generation completed:', result);
+          }).catch(error => {
+            console.error('Error generating music:', error);
+          });
+        } catch (error) {
+          console.error('Error setting up music generation:', error);
+          
+          // If there was an error setting up music generation, add a message
+          if (elizaResponse.content.text) {
+            elizaResponse.content.text += "\n\nI encountered an error while setting up music generation. Please try again later.";
+          } else {
+            elizaResponse.content.text = "I encountered an error while setting up music generation. Please try again later.";
+          }
         }
       }
       
@@ -126,15 +247,7 @@ export const elizaApiClient = {
       const fallbackResponse: ElizaResponse = {
         id: Date.now().toString(),
         content: {
-          text: `I encountered an error while processing your request: ${error.message}. Let me try to help with your music request anyway.`,
-          music: {
-            url: "https://example.com/fallback-music.mp3",
-            title: "Fallback Track",
-            genre: "Electronic",
-            mood: "Ambient",
-            bpm: 120,
-            key: "C Major"
-          }
+          text: `I encountered an error while processing your request: ${error.message}. Please try again later.`
         },
         createdAt: Date.now(),
         user: "eliza"
@@ -173,6 +286,28 @@ export const elizaApiClient = {
       console.error('Error getting Eliza agents:', error);
       throw error;
     }
+  },
+  
+  /**
+   * Check the status of a music generation task
+   * @param taskId - The task ID to check
+   * @returns Promise with the task status and output
+   */
+  checkMusicGenerationStatus: async (taskId: string): Promise<{
+    status: string;
+    url?: string;
+    title?: string;
+    lyrics?: string;
+  }> => {
+    try {
+      // This is a placeholder for now - we'll implement the actual status checking in the Chat component
+      return {
+        status: 'pending'
+      };
+    } catch (error) {
+      console.error('Error checking music generation status:', error);
+      throw error;
+    }
   }
 };
 
@@ -190,104 +325,4 @@ function isMusicGenerationRequest(message: string): boolean {
   
   const lowerMessage = message.toLowerCase();
   return musicKeywords.some(keyword => lowerMessage.includes(keyword));
-}
-
-/**
- * Extract music details from the response text
- * @param responseText - The text response from Eliza
- * @param originalMessage - The original user message
- * @returns Object with music details
- */
-function extractMusicDetails(responseText: string, originalMessage: string): any {
-  // Default values
-  const details = {
-    title: "Generated Track",
-    genre: "Electronic",
-    mood: "Ambient",
-    bpm: 120,
-    key: "C Major"
-  };
-  
-  // Try to extract genre from the response or original message
-  const genrePatterns = [
-    /genre:?\s*([a-zA-Z0-9 &-]+)/i,
-    /([a-zA-Z]+)\s+music/i,
-    /([a-zA-Z]+)\s+track/i,
-    /([a-zA-Z]+)\s+beat/i
-  ];
-  
-  for (const pattern of genrePatterns) {
-    const match = responseText.match(pattern) || originalMessage.match(pattern);
-    if (match && match[1]) {
-      details.genre = match[1].trim();
-      break;
-    }
-  }
-  
-  // Try to extract mood
-  const moodPatterns = [
-    /mood:?\s*([a-zA-Z0-9 ]+)/i,
-    /feeling:?\s*([a-zA-Z0-9 ]+)/i,
-    /([a-zA-Z]+)\s+vibe/i,
-    /([a-zA-Z]+)\s+feeling/i
-  ];
-  
-  for (const pattern of moodPatterns) {
-    const match = responseText.match(pattern) || originalMessage.match(pattern);
-    if (match && match[1]) {
-      details.mood = match[1].trim();
-      break;
-    }
-  }
-  
-  // Try to extract title
-  const titlePatterns = [
-    /title:?\s*["']?([^"']+)["']?/i,
-    /called:?\s*["']?([^"']+)["']?/i,
-    /named:?\s*["']?([^"']+)["']?/i
-  ];
-  
-  for (const pattern of titlePatterns) {
-    const match = responseText.match(pattern) || originalMessage.match(pattern);
-    if (match && match[1]) {
-      details.title = match[1].trim();
-      break;
-    }
-  }
-  
-  // If no title was found, generate one based on genre and mood
-  if (details.title === "Generated Track") {
-    details.title = `${details.mood} ${details.genre} Experience`;
-  }
-  
-  // Try to extract BPM
-  const bpmPatterns = [
-    /bpm:?\s*(\d+)/i,
-    /(\d+)\s*bpm/i,
-    /tempo:?\s*(\d+)/i
-  ];
-  
-  for (const pattern of bpmPatterns) {
-    const match = responseText.match(pattern) || originalMessage.match(pattern);
-    if (match && match[1]) {
-      details.bpm = parseInt(match[1].trim(), 10);
-      break;
-    }
-  }
-  
-  // Try to extract key
-  const keyPatterns = [
-    /key:?\s*([A-G][#b]?\s*(?:major|minor|maj|min))/i,
-    /in\s+([A-G][#b]?\s*(?:major|minor|maj|min))/i
-  ];
-  
-  for (const pattern of keyPatterns) {
-    const match = responseText.match(pattern) || originalMessage.match(pattern);
-    if (match && match[1]) {
-      details.key = match[1].trim();
-      break;
-    }
-  }
-  
-  return details;
 } 
