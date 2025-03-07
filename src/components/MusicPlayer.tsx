@@ -141,6 +141,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({
                 <button 
                   onClick={toggleLyrics}
                   className="flex items-center text-music-primary hover:underline"
+                  disabled={!trackUrl}
                 >
                   <span>Lyrics</span>
                   {showLyrics ? (
@@ -154,17 +155,15 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({
           </div>
         </div>
         
-        {trackUrl && (
-          <div className="flex ml-4">
-            <div className="audio-visualizer">
-              <div className={`audio-bar h-4 ${isPlaying ? 'animate-wave-1' : ''}`}></div>
-              <div className={`audio-bar h-6 ${isPlaying ? 'animate-wave-2' : ''}`}></div>
-              <div className={`audio-bar h-8 ${isPlaying ? 'animate-wave-3' : ''}`}></div>
-              <div className={`audio-bar h-5 ${isPlaying ? 'animate-wave-4' : ''}`}></div>
-              <div className={`audio-bar h-3 ${isPlaying ? 'animate-wave-5' : ''}`}></div>
-            </div>
+        <div className={cn("flex ml-4", !trackUrl && "opacity-50")}>
+          <div className="audio-visualizer">
+            <div className={`audio-bar h-4 ${isPlaying ? 'animate-wave-1' : ''}`}></div>
+            <div className={`audio-bar h-6 ${isPlaying ? 'animate-wave-2' : ''}`}></div>
+            <div className={`audio-bar h-8 ${isPlaying ? 'animate-wave-3' : ''}`}></div>
+            <div className={`audio-bar h-5 ${isPlaying ? 'animate-wave-4' : ''}`}></div>
+            <div className={`audio-bar h-3 ${isPlaying ? 'animate-wave-5' : ''}`}></div>
           </div>
-        )}
+        </div>
       </div>
 
       {/* Lyrics section */}
@@ -174,73 +173,81 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({
         </div>
       )}
 
-      {trackUrl ? (
-        <>
-          <div className="flex items-center space-x-3 mb-3">
-            <button 
-              onClick={togglePlay}
-              disabled={!isLoaded || loadError}
-              className="p-2.5 rounded-full bg-music-primary text-white hover:bg-music-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all-250"
-            >
-              {isPlaying ? (
-                <Pause className="h-5 w-5" />
-              ) : (
-                <Play className="h-5 w-5" />
-              )}
-            </button>
+      {/* Always show the player controls, but disable them when no track is loaded */}
+      <div className="flex items-center space-x-3 mb-3">
+        <button 
+          onClick={togglePlay}
+          disabled={!isLoaded || loadError || !trackUrl}
+          className={cn(
+            "p-2.5 rounded-full bg-music-primary text-white hover:bg-music-primary/90 transition-all-250",
+            (!trackUrl || !isLoaded || loadError) && "opacity-50 cursor-not-allowed"
+          )}
+        >
+          {isPlaying ? (
+            <Pause className="h-5 w-5" />
+          ) : (
+            <Play className="h-5 w-5" />
+          )}
+        </button>
 
-            <div className="flex-1 flex items-center space-x-2">
-              <span className="text-xs text-muted-foreground w-10">
-                {formatTime(currentTime)}
-              </span>
-              <input
-                type="range"
-                min="0"
-                max={duration || 100}
-                value={currentTime}
-                onChange={handleSeek}
-                disabled={!isLoaded || loadError}
-                className="w-full h-2 rounded-full appearance-none bg-secondary focus:outline-none disabled:opacity-50"
-                style={{
-                  backgroundImage: `linear-gradient(to right, hsl(var(--music-primary)) 0%, hsl(var(--music-primary)) ${(currentTime / (duration || 1)) * 100}%, hsl(var(--secondary)) ${(currentTime / (duration || 1)) * 100}%, hsl(var(--secondary)) 100%)`,
-                }}
-              />
-              <span className="text-xs text-muted-foreground w-10">
-                {formatTime(duration || 0)}
-              </span>
-            </div>
+        <div className="flex-1 flex items-center space-x-2">
+          <span className={cn("text-xs text-muted-foreground w-10", !trackUrl && "opacity-50")}>
+            {formatTime(currentTime)}
+          </span>
+          <input
+            type="range"
+            min="0"
+            max={duration || 100}
+            value={currentTime}
+            onChange={handleSeek}
+            disabled={!isLoaded || loadError || !trackUrl}
+            className={cn(
+              "w-full h-2 rounded-full appearance-none bg-secondary focus:outline-none",
+              (!trackUrl || !isLoaded || loadError) && "opacity-50 cursor-not-allowed"
+            )}
+            style={{
+              backgroundImage: `linear-gradient(to right, hsl(var(--music-primary)) 0%, hsl(var(--music-primary)) ${(currentTime / (duration || 1)) * 100}%, hsl(var(--secondary)) ${(currentTime / (duration || 1)) * 100}%, hsl(var(--secondary)) 100%)`,
+            }}
+          />
+          <span className={cn("text-xs text-muted-foreground w-10", !trackUrl && "opacity-50")}>
+            {formatTime(duration || 0)}
+          </span>
+        </div>
 
-            <button
-              onClick={toggleMute}
-              disabled={!isLoaded || loadError}
-              className="p-2 rounded-full text-muted-foreground hover:text-foreground transition-all-250 disabled:opacity-50"
-            >
-              {isMuted ? (
-                <VolumeX className="h-5 w-5" />
-              ) : (
-                <Volume2 className="h-5 w-5" />
-              )}
-            </button>
+        <button
+          onClick={toggleMute}
+          disabled={!isLoaded || loadError || !trackUrl}
+          className={cn(
+            "p-2 rounded-full text-muted-foreground hover:text-foreground transition-all-250",
+            (!trackUrl || !isLoaded || loadError) && "opacity-50 cursor-not-allowed"
+          )}
+        >
+          {isMuted ? (
+            <VolumeX className="h-5 w-5" />
+          ) : (
+            <Volume2 className="h-5 w-5" />
+          )}
+        </button>
+      </div>
+
+      {!isLoaded && trackUrl && !loadError && (
+        <div className="flex justify-center items-center py-2">
+          <div className="flex space-x-2 items-center text-sm text-muted-foreground">
+            <div className="h-4 w-4 rounded-full border-2 border-music-primary/30 border-t-music-primary animate-spin"></div>
+            <span>Loading audio...</span>
           </div>
+        </div>
+      )}
 
-          {!isLoaded && !loadError && (
-            <div className="flex justify-center items-center py-2">
-              <div className="flex space-x-2 items-center text-sm text-muted-foreground">
-                <div className="h-4 w-4 rounded-full border-2 border-music-primary/30 border-t-music-primary animate-spin"></div>
-                <span>Loading audio...</span>
-              </div>
-            </div>
-          )}
+      {loadError && trackUrl && (
+        <div className="flex justify-center items-center py-2 text-red-500 text-sm">
+          <span>Error loading audio. Please try again later.</span>
+        </div>
+      )}
 
-          {loadError && (
-            <div className="flex justify-center items-center py-2 text-red-500 text-sm">
-              <span>Error loading audio. Please try again later.</span>
-            </div>
-          )}
-        </>
-      ) : (
-        <div className="flex justify-center items-center py-4 text-muted-foreground text-sm">
-          <span>No track loaded</span>
+      {!trackUrl && (
+        <div className="flex justify-center items-center py-2 text-muted-foreground text-sm">
+          <span>No track loaded. Ask the AI to create music for you!</span>
         </div>
       )}
     </div>
