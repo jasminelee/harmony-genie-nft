@@ -4,6 +4,25 @@
 
 **URL**: https://lovable.dev/projects/b3fccc28-6c7f-4e4a-80ce-eb73b28ebe78
 
+## Harmony Genie NFT with Eliza AI Agent
+
+This project integrates the Eliza AI agent from the mx-agent-kit to generate music based on user descriptions. Users can interact with the AI agent through a chat interface, and the agent will generate music that can be minted as NFTs.
+
+### Quick Start with Eliza AI Agent
+
+To start both the Eliza AI agent and the Harmony Genie NFT application, run:
+
+```sh
+./start-harmony-genie.sh
+```
+
+This will start:
+- The Eliza AI agent on port 3000 (http://localhost:3000)
+- The Eliza dashboard on port 5173 (http://localhost:5173)
+- The Harmony Genie NFT application on port 5174 (http://localhost:5174)
+
+For detailed instructions on setting up and using the Eliza AI agent integration, see [ELIZA_INTEGRATION.md](./ELIZA_INTEGRATION.md).
+
 ## How can I edit this code?
 
 There are several ways of editing your application.
@@ -59,6 +78,7 @@ This project is built with .
 - React
 - shadcn-ui
 - Tailwind CSS
+- Eliza AI Agent (for music generation)
 
 ## How can I deploy this project?
 
