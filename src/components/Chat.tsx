@@ -80,121 +80,153 @@ const Chat: React.FC<ChatProps> = ({ onMusicGenerated, className }) => {
     };
   }, [pollingInterval]);
 
+  // Function to handle task status updates
+  const handleTaskStatus = (taskStatus: PiApiTaskResponse) => {
+    // Only log full task status if not completed
+    if (taskStatus.status !== TaskStatus.COMPLETED) {
+      console.log('Handling task status update:', taskStatus);
+    }
+    
+    // Update the status message in the UI
+    if (taskStatus.status !== musicGenerationStatus) {
+      setMusicGenerationStatus(taskStatus.status);
+      
+      // Update the last message if it's a status message
+      setMessages(prev => {
+        const lastMessage = prev[prev.length - 1];
+        if (lastMessage && lastMessage.content.includes('Music generation')) {
+          const statusText = taskStatus.status === TaskStatus.PROCESSING 
+            ? 'in progress' 
+            : taskStatus.status.toLowerCase();
+          
+          return [
+            ...prev.slice(0, -1),
+            {
+              ...lastMessage,
+              content: `Music generation ${statusText}... ${taskStatus.status === TaskStatus.COMPLETED ? 'Done!' : 'Please wait...'}`
+            }
+          ];
+        }
+        return prev;
+      });
+    }
+    
+    if (taskStatus.status === TaskStatus.COMPLETED) {
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+        setPollingInterval(null);
+      }
+      
+      if (taskStatus.output && taskStatus.output.audio_url) {
+        console.log('Music generation completed with audio URL:', taskStatus.output.audio_url);
+        
+        // Check if we already have a completion message to avoid duplicates
+        const hasCompletionMessage = messages.some(msg => 
+          msg.content.includes('is ready! Would you like to mint it as an NFT?')
+        );
+        
+        if (!hasCompletionMessage) {
+          // Add a message about the completed music
+          const completionMessage: Message = {
+            id: `completion-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+            content: `Your song "${taskStatus.output.title || 'Generated Song'}" is ready! Would you like to mint it as an NFT?`,
+            sender: 'ai',
+            timestamp: new Date(),
+          };
+          
+          setMessages(prev => [...prev, completionMessage]);
+        }
+        
+        // Call the onMusicGenerated callback with the track URL and metadata
+        if (onMusicGenerated) {
+          console.log('Calling onMusicGenerated with audio URL');
+          onMusicGenerated(taskStatus.output.audio_url, {
+            title: taskStatus.output.title || 'Generated Song',
+            genre: 'Generated Music',
+            mood: 'Custom',
+            lyrics: taskStatus.output.lyrics || ''
+          });
+        } else {
+          console.warn('onMusicGenerated callback is not defined');
+        }
+      } else {
+        console.error('Task is completed but no audio URL found');
+        
+        // Check if we already have an error message to avoid duplicates
+        const hasErrorMessage = messages.some(msg => 
+          msg.content.includes('Your song was generated but I couldn\'t find the audio URL')
+        );
+        
+        if (!hasErrorMessage) {
+          // Add a message about the missing audio URL
+          const errorMessage: Message = {
+            id: `error-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+            content: `Your song was generated but I couldn't find the audio URL. Please try again.`,
+            sender: 'ai',
+            timestamp: new Date(),
+          };
+          
+          setMessages(prev => [...prev, errorMessage]);
+        }
+      }
+    } else if (taskStatus.status === TaskStatus.FAILED) {
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+        setPollingInterval(null);
+      }
+      
+      // Check if we already have a failure message to avoid duplicates
+      const hasFailureMessage = messages.some(msg => 
+        msg.content.includes('Sorry, I couldn\'t generate your music')
+      );
+      
+      if (!hasFailureMessage) {
+        // Add a message about the failed music generation
+        const failureMessage: Message = {
+          id: `failure-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+          content: `Sorry, I couldn't generate your music. ${taskStatus.error || 'Please try again with a different description.'}`,
+          sender: 'ai',
+          timestamp: new Date(),
+        };
+        
+        setMessages(prev => [...prev, failureMessage]);
+      }
+    }
+  };
+
   // Poll for music generation status
   useEffect(() => {
     if (musicTaskId && musicGenerationStatus !== 'completed' && musicGenerationStatus !== 'failed') {
+      console.log(`Setting up polling for music task ${musicTaskId}`);
       
       // Clear any existing interval
       if (pollingInterval) {
         clearInterval(pollingInterval);
       }
       
+      // Track the last status to avoid duplicate updates
+      let lastStatus: TaskStatus | null = null;
+      
       // Initial check immediately
       const checkStatus = async () => {
         try {
+          console.log(`Checking status of music generation task ${musicTaskId}...`);
           const taskStatus = await checkTaskStatus(musicTaskId);
           
-          // Only log full task status if not completed
-          if (taskStatus.status !== TaskStatus.COMPLETED) {
+          // Only log full task status if not completed and status has changed
+          if (taskStatus.status !== TaskStatus.COMPLETED && taskStatus.status !== lastStatus) {
             console.log('Task status:', taskStatus);
+          } else if (taskStatus.status === TaskStatus.COMPLETED) {
+            console.log(`Task ${musicTaskId} completed with audio URL: ${taskStatus.output?.audio_url || 'none'}`);
           }
           
-          handleTaskStatus(taskStatus);
+          // Only process the status update if it's different from the last one
+          if (taskStatus.status !== lastStatus) {
+            lastStatus = taskStatus.status;
+            handleTaskStatus(taskStatus);
+          }
         } catch (error) {
           console.error('Error checking music generation status:', error);
-        }
-      };
-      
-      // Function to handle task status updates
-      const handleTaskStatus = (taskStatus: PiApiTaskResponse) => {
-        // Only log full task status if not completed
-        if (taskStatus.status !== TaskStatus.COMPLETED) {
-          console.log('Handling task status update:', taskStatus);
-        }
-        
-        // Update the status message in the UI
-        if (taskStatus.status !== musicGenerationStatus) {
-          setMusicGenerationStatus(taskStatus.status);
-          
-          // Update the last message if it's a status message
-          setMessages(prev => {
-            const lastMessage = prev[prev.length - 1];
-            if (lastMessage && lastMessage.content.includes('Music generation')) {
-              const statusText = taskStatus.status === TaskStatus.PROCESSING 
-                ? 'in progress' 
-                : taskStatus.status.toLowerCase();
-              
-              return [
-                ...prev.slice(0, -1),
-                {
-                  ...lastMessage,
-                  content: `Music generation ${statusText}... ${taskStatus.status === TaskStatus.COMPLETED ? 'Done!' : 'Please wait...'}`
-                }
-              ];
-            }
-            return prev;
-          });
-        }
-        
-        if (taskStatus.status === TaskStatus.COMPLETED) {
-          if (pollingInterval) {
-            clearInterval(pollingInterval);
-            setPollingInterval(null);
-          }
-          
-          if (taskStatus.output && taskStatus.output.audio_url) {
-            console.log('Music generation completed with audio URL:', taskStatus.output.audio_url);
-            
-            // Add a message about the completed music
-            const completionMessage: Message = {
-              id: `completion-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-              content: `Your song "${taskStatus.output.title || 'Generated Song'}" is ready! Would you like to mint it as an NFT?`,
-              sender: 'ai',
-              timestamp: new Date(),
-            };
-            
-            setMessages(prev => [...prev, completionMessage]);
-            
-            // Call the onMusicGenerated callback with the track URL and metadata
-            if (onMusicGenerated) {
-              console.log('Calling onMusicGenerated with audio URL');
-              onMusicGenerated(taskStatus.output.audio_url, {
-                title: taskStatus.output.title || 'Generated Song',
-                genre: 'Generated Music',
-                mood: 'Custom',
-                lyrics: taskStatus.output.lyrics || ''
-              });
-            } else {
-              console.warn('onMusicGenerated callback is not defined');
-            }
-          } else {
-            console.error('Task is completed but no audio URL found');
-            
-            // Add a message about the missing audio URL
-            const errorMessage: Message = {
-              id: `error-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-              content: `Your song was generated but I couldn't find the audio URL. Please try again.`,
-              sender: 'ai',
-              timestamp: new Date(),
-            };
-            
-            setMessages(prev => [...prev, errorMessage]);
-          }
-        } else if (taskStatus.status === TaskStatus.FAILED) {
-          if (pollingInterval) {
-            clearInterval(pollingInterval);
-            setPollingInterval(null);
-          }
-          
-          // Add a message about the failed music generation
-          const failureMessage: Message = {
-            id: `failure-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-            content: `Sorry, I couldn't generate your music. ${taskStatus.error || 'Please try again with a different description.'}`,
-            sender: 'ai',
-            timestamp: new Date(),
-          };
-          
-          setMessages(prev => [...prev, failureMessage]);
         }
       };
       
@@ -238,27 +270,39 @@ const Chat: React.FC<ChatProps> = ({ onMusicGenerated, className }) => {
       console.log(`Task ID parts: ${fullTaskId.split('-').join(', ')}`);
       console.log(`Task ID length: ${fullTaskId.length}`);
       
-      // Add a message about the task creation
-      setMessages(prev => {
-        // Check if we already have a task creation message
-        if (prev.some(msg => msg.content.includes(fullTaskId))) {
-          return prev;
-        }
-        
-        return [
-          ...prev,
-          {
-            id: `task-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-            content: `Task created: ${fullTaskId}`,
-            sender: 'ai',
-            timestamp: new Date()
+      // Check if we already have a task creation message with this ID
+      const hasTaskCreationMessage = messages.some(msg => 
+        msg.content.includes(`Task created: ${fullTaskId}`)
+      );
+      
+      // Add a message about the task creation if we don't already have one
+      if (!hasTaskCreationMessage) {
+        setMessages(prev => {
+          // Check if we already have a task creation message
+          if (prev.some(msg => msg.content.includes('Task created:'))) {
+            return prev;
           }
-        ];
-      });
+          
+          return [
+            ...prev,
+            {
+              id: `task-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+              content: `Task created: ${fullTaskId}`,
+              sender: 'ai',
+              timestamp: new Date()
+            }
+          ];
+        });
+      }
     }
     
     // Update the last message if it's a status message
     setMessages(prev => {
+      // Don't add duplicate status messages
+      if (prev.some(msg => msg.content === status)) {
+        return prev;
+      }
+      
       const lastMessage = prev[prev.length - 1];
       if (lastMessage && lastMessage.content.includes('Music generation')) {
         return [
