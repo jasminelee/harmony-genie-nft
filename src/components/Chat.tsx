@@ -36,7 +36,6 @@ const Chat: React.FC<ChatProps> = ({ onMusicGenerated, className }) => {
   useEffect(() => {
     const checkAgents = async () => {
       try {
-        console.log('Checking available Eliza agents...');
         const response = await elizaApiClient.getAgents();
         console.log('Available Eliza agents:', response);
         
@@ -84,9 +83,6 @@ const Chat: React.FC<ChatProps> = ({ onMusicGenerated, className }) => {
   // Poll for music generation status
   useEffect(() => {
     if (musicTaskId && musicGenerationStatus !== 'completed' && musicGenerationStatus !== 'failed') {
-      console.log(`Setting up polling for music task ${musicTaskId}`);
-      console.log(`Task ID length: ${musicTaskId.length}`);
-      console.log(`Task ID parts: ${musicTaskId.split('-').join(', ')}`);
       
       // Clear any existing interval
       if (pollingInterval) {
@@ -96,9 +92,12 @@ const Chat: React.FC<ChatProps> = ({ onMusicGenerated, className }) => {
       // Initial check immediately
       const checkStatus = async () => {
         try {
-          console.log(`Checking status of music generation task ${musicTaskId}...`);
           const taskStatus = await checkTaskStatus(musicTaskId);
-          console.log('Task status:', taskStatus);
+          
+          // Only log full task status if not completed
+          if (taskStatus.status !== TaskStatus.COMPLETED) {
+            console.log('Task status:', taskStatus);
+          }
           
           handleTaskStatus(taskStatus);
         } catch (error) {
@@ -108,7 +107,10 @@ const Chat: React.FC<ChatProps> = ({ onMusicGenerated, className }) => {
       
       // Function to handle task status updates
       const handleTaskStatus = (taskStatus: PiApiTaskResponse) => {
-        console.log('Handling task status update:', taskStatus);
+        // Only log full task status if not completed
+        if (taskStatus.status !== TaskStatus.COMPLETED) {
+          console.log('Handling task status update:', taskStatus);
+        }
         
         // Update the status message in the UI
         if (taskStatus.status !== musicGenerationStatus) {
@@ -155,7 +157,7 @@ const Chat: React.FC<ChatProps> = ({ onMusicGenerated, className }) => {
             
             // Call the onMusicGenerated callback with the track URL and metadata
             if (onMusicGenerated) {
-              console.log('Calling onMusicGenerated with:', taskStatus.output.audio_url);
+              console.log('Calling onMusicGenerated with audio URL');
               onMusicGenerated(taskStatus.output.audio_url, {
                 title: taskStatus.output.title || 'Generated Song',
                 genre: 'Generated Music',
@@ -166,7 +168,7 @@ const Chat: React.FC<ChatProps> = ({ onMusicGenerated, className }) => {
               console.warn('onMusicGenerated callback is not defined');
             }
           } else {
-            console.error('Task is completed but no audio URL found:', taskStatus);
+            console.error('Task is completed but no audio URL found');
             
             // Add a message about the missing audio URL
             const errorMessage: Message = {

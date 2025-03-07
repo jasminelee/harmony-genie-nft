@@ -158,8 +158,33 @@ export const elizaApiClient = {
       
       let elizaResponse;
       try {
-        elizaResponse = JSON.parse(responseText);
-        console.log('Parsed Eliza response:', elizaResponse);
+        const parsedResponse = JSON.parse(responseText);
+        console.log('Parsed Eliza response:', parsedResponse);
+        
+        // Handle array response format
+        if (Array.isArray(parsedResponse) && parsedResponse.length > 0) {
+          const firstResponse = parsedResponse[0];
+          console.log('First response item:', firstResponse);
+          
+          // Extract text and user from the array item
+          if (firstResponse.text && firstResponse.user) {
+            elizaResponse = {
+              id: Date.now().toString(),
+              content: {
+                text: firstResponse.text
+              },
+              createdAt: Date.now(),
+              user: firstResponse.user.toLowerCase()
+            };
+          } else {
+            throw new Error('Invalid response format: missing text or user');
+          }
+        } else if (parsedResponse.content) {
+          // Handle object response format
+          elizaResponse = parsedResponse;
+        } else {
+          throw new Error('Unexpected response format');
+        }
       } catch (error) {
         console.error('Error parsing Eliza response:', error);
         throw new Error(`Failed to parse Eliza response: ${error.message}`);
@@ -274,7 +299,6 @@ export const elizaApiClient = {
       }
       
       const responseText = await response.text();
-      console.log('Raw agents response:', responseText);
       
       try {
         return JSON.parse(responseText);

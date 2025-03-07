@@ -55,7 +55,7 @@ export async function createMusicGenerationTask(
       model: options.model || 'music-s', // Default to Suno
       task_type: 'generate_music',
       input: {
-        prompt: prompt,
+        gpt_description_prompt: prompt,
         negative_tags: options.negative_tags || '',
         tags: options.tags || '',
         title: options.title || '',
@@ -144,13 +144,10 @@ export async function createMusicGenerationTask(
  * @returns Promise with the task status and output
  */
 export async function checkTaskStatus(taskId: string): Promise<PiApiTaskResponse> {
-  try {
-    console.log(`Checking task status for ID: ${taskId}`);
-    
+  try {    
     // Make sure we're using the full task ID in the URL
     // According to PiAPI docs, the endpoint is /api/v1/task?task_id=TASK_ID
     const url = `${PIAPI_BASE_URL}/task/${taskId}`;
-    console.log(`Request URL: ${url}`);
     
     const response = await fetch(url, {
       method: 'GET',
@@ -180,7 +177,6 @@ export async function checkTaskStatus(taskId: string): Promise<PiApiTaskResponse
 
     // Get the raw response text first for debugging
     const responseText = await response.text();
-    console.log(`Raw PiAPI response for task ${taskId}:`, responseText);
     
     // Parse the response
     let data;
