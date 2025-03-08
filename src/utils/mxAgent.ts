@@ -3,6 +3,8 @@
  * This is a simplified mock of how the MX-Agent Kit would be integrated
  */
 
+import { mintSongAsNFT } from '../services/nftService';
+
 export interface MXAgentResponse {
   message: string;
   action?: string;
@@ -113,22 +115,21 @@ export const mintNFTWithAgent = async (
   try {
     console.log("Minting NFT with params:", params);
     
-    // In a real implementation, this would:
-    // 1. Create the NFT metadata
-    // 2. Upload the media to IPFS or other storage
-    // 3. Call the MultiversX blockchain to mint the NFT
-    
-    // Simulate API delay for minting transaction
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // Mock transaction hash - in a real implementation, this would be the actual transaction hash
-    const txHash = "0x" + Array.from({length: 64}, () => 
-      Math.floor(Math.random() * 16).toString(16)).join('');
+    // Use the actual NFT minting service
+    const txHash = await mintSongAsNFT(
+      {
+        title: params.title,
+        artist: "AI Music Generator",
+        genre: params.genre,
+        audioUrl: params.mediaUrl,
+      },
+      params.address
+    );
     
     return {
       success: true,
       transactionHash: txHash,
-      tokenId: "MUSIC-" + Math.floor(Math.random() * 1000000)
+      tokenId: "MUSIC-abcdef-01" // This would be determined by the blockchain in a real implementation
     };
   } catch (error) {
     console.error("NFT minting failed:", error);

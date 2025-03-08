@@ -9,6 +9,7 @@ import {
   ExtensionLoginButton,
   WebWalletLoginButton
 } from '@multiversx/sdk-dapp/UI';
+import { mintNFTWithAgent, NFTMintParams } from '@/utils/mxAgent';
 
 type MintStatus = 'idle' | 'minting' | 'success' | 'error';
 
@@ -40,14 +41,24 @@ const NFTMint: React.FC<NFTMintProps> = ({ songData, className }) => {
     try {
       setStatus('minting');
       
-      // This is a placeholder for actual NFT minting
-      // In a real implementation, you would create a transaction for minting an NFT
+      // Prepare NFT minting parameters
+      const nftParams: NFTMintParams = {
+        title: songData.title,
+        description: `AI-generated ${songData.genre} music`,
+        mediaUrl: songData.audioUrl,
+        genre: songData.genre,
+        address: address
+      };
       
-      // For demo purposes, we'll simulate a successful mint after a delay
-      setTimeout(() => {
-        setTxHash('sample-tx-hash');
+      // Call the mintNFTWithAgent function
+      const result = await mintNFTWithAgent(nftParams);
+      
+      if (result.success) {
+        setTxHash(result.transactionHash);
         setStatus('success');
-      }, 2000);
+      } else {
+        throw new Error('NFT minting failed');
+      }
       
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to mint NFT');
