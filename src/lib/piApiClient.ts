@@ -190,9 +190,7 @@ export async function checkTaskStatus(taskId: string): Promise<PiApiTaskResponse
         error: `Error parsing response: ${error.message}`
       };
     }
-    
-    console.log(`Parsed PiAPI task status for ${taskId}:`, data);
-    
+        
     // Handle the case where the response is just a success message
     if (data.message === 'success' && !data.status && !data.data) {
       console.log(`Task ${taskId} returned success but no status, returning pending status`);
