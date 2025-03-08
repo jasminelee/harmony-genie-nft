@@ -50,12 +50,15 @@ export async function createMusicGenerationTask(
   try {
     console.log('Creating music generation task with prompt:', prompt);
     
+    // Ensure prompt is within 200 character limit
+    const limitedPrompt = prompt.length > 200 ? prompt.substring(0, 197) + '...' : prompt;
+    
     // According to PiAPI docs, the endpoint is /api/v1/task
     const requestBody = {
       model: options.model || 'music-s', // Default to Suno
       task_type: 'generate_music',
       input: {
-        gpt_description_prompt: prompt,
+        gpt_description_prompt: limitedPrompt,
         negative_tags: options.negative_tags || '',
         tags: options.tags || '',
         title: options.title || '',
@@ -481,9 +484,12 @@ export async function generateMusic(
   tags?: string[];
 }> {
   try {
+    // Ensure prompt is within 200 character limit
+    const limitedPrompt = prompt.length > 200 ? prompt.substring(0, 197) + '...' : prompt;
+    
     // Log the options being used
     console.log('Generating music with options:', {
-      prompt,
+      prompt: limitedPrompt,
       model: options.model || 'music-s',
       negative_tags: options.negative_tags || '',
       tags: options.tags || '',
@@ -493,7 +499,7 @@ export async function generateMusic(
     });
     
     // Create the task
-    const taskId = await createMusicGenerationTask(prompt, options);
+    const taskId = await createMusicGenerationTask(limitedPrompt, options);
     
     if (options.onStatusUpdate) {
       options.onStatusUpdate(`Task created: ${taskId}`);

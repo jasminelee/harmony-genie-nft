@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
-import { CheckCircle, Loader, AlertCircle, ExternalLink, Wallet, ChevronDown, ChevronUp } from 'lucide-react';
+import { CheckCircle, Loader, AlertCircle, ExternalLink, Wallet, ChevronDown, ChevronUp, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useGetAccountInfo, useGetLoginInfo } from '@multiversx/sdk-dapp/hooks';
-import { sendTransactions } from '@multiversx/sdk-dapp/services';
-import { refreshAccount } from '@multiversx/sdk-dapp/utils';
 import { 
   WalletConnectLoginButton,
   ExtensionLoginButton,
@@ -57,11 +55,29 @@ const NFTMint: React.FC<NFTMintProps> = ({ songData, className }) => {
         setTxHash(result.transactionHash);
         setStatus('success');
       } else {
-        throw new Error('NFT minting failed');
+        throw new Error(result.error || 'NFT minting failed');
       }
       
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to mint NFT');
+      console.error('NFT minting error:', err);
+      let errorMessage = 'Failed to mint NFT';
+      
+      if (err instanceof Error) {
+        // Check for common MultiversX errors
+        if (err.message.includes('invalid signature')) {
+          errorMessage = 'Transaction failed: Invalid signature. Please try again.';
+        } else if (err.message.includes('insufficient funds')) {
+          errorMessage = 'Transaction failed: Insufficient funds for gas fees';
+        } else if (err.message.includes('insufficient gas limit')) {
+          errorMessage = 'Transaction failed: Insufficient gas limit. Please try again.';
+        } else if (err.message.includes('user rejected')) {
+          errorMessage = 'Transaction was rejected by the user';
+        } else {
+          errorMessage = err.message;
+        }
+      }
+      
+      setError(errorMessage);
       setStatus('error');
     }
   };
@@ -70,11 +86,18 @@ const NFTMint: React.FC<NFTMintProps> = ({ songData, className }) => {
     setShowWalletOptions(!showWalletOptions);
   };
 
+  const handleClosePopup = () => {
+    // Reset the status to idle
+    setStatus('idle');
+    // Clear any error messages
+    setError(null);
+  };
+
   return (
     <div className={cn("bg-white rounded-xl p-4 border shadow-sm", className)}>
       <h3 className="font-medium text-lg mb-3">Mint as NFT</h3>
       
-      <div className="space-y-4">
+      <div className="space-y-4 relative">
         {status === 'idle' && (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
@@ -141,7 +164,14 @@ const NFTMint: React.FC<NFTMintProps> = ({ songData, className }) => {
         )}
 
         {status === 'minting' && (
-          <div className="flex flex-col items-center justify-center py-4">
+          <div className="flex flex-col items-center justify-center py-4 relative bg-white rounded-lg border p-4 shadow-sm">
+            <button 
+              onClick={handleClosePopup} 
+              className="absolute top-2 right-2 p-1 text-gray-400 hover:text-gray-600 z-10"
+              aria-label="Close"
+            >
+              <X className="h-5 w-5" />
+            </button>
             <Loader className="h-8 w-8 text-music-primary animate-spin mb-3" />
             <p className="text-sm font-medium">Minting your NFT...</p>
             <p className="text-xs text-muted-foreground mt-1">
@@ -151,7 +181,14 @@ const NFTMint: React.FC<NFTMintProps> = ({ songData, className }) => {
         )}
 
         {status === 'success' && txHash && (
-          <div className="flex flex-col items-center justify-center py-2">
+          <div className="flex flex-col items-center justify-center py-2 relative bg-white rounded-lg border p-4 shadow-sm">
+            <button 
+              onClick={handleClosePopup} 
+              className="absolute top-2 right-2 p-1 text-gray-400 hover:text-gray-600 z-10"
+              aria-label="Close"
+            >
+              <X className="h-5 w-5" />
+            </button>
             <CheckCircle className="h-8 w-8 text-green-500 mb-3" />
             <p className="text-sm font-medium">NFT Minted Successfully!</p>
             <p className="text-xs text-muted-foreground text-center mt-1 mb-3">
@@ -178,7 +215,14 @@ const NFTMint: React.FC<NFTMintProps> = ({ songData, className }) => {
         )}
 
         {status === 'error' && (
-          <div className="flex flex-col items-center justify-center py-2">
+          <div className="flex flex-col items-center justify-center py-2 relative bg-white rounded-lg border p-4 shadow-sm">
+            <button 
+              onClick={handleClosePopup} 
+              className="absolute top-2 right-2 p-1 text-gray-400 hover:text-gray-600 z-10"
+              aria-label="Close"
+            >
+              <X className="h-5 w-5" />
+            </button>
             <AlertCircle className="h-8 w-8 text-destructive mb-3" />
             <p className="text-sm font-medium">Minting Failed</p>
             <p className="text-xs text-muted-foreground text-center mt-1 mb-3">

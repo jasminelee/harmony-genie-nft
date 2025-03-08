@@ -1,4 +1,3 @@
-
 /**
  * Mubert API Integration
  * Documentation: https://mubert2.docs.apiary.io/#introduction/track-generation/text-to-music
@@ -24,32 +23,36 @@ const API_ENDPOINT = "https://api.mubert.com/v2/TTMGenerate";
 
 export const generateTrack = async (prompt: string): Promise<MubertGenerateResponse> => {
   try {
+    // Ensure prompt is within 200 character limit
+    const limitedPrompt = prompt.length > 200 ? prompt.substring(0, 197) + '...' : prompt;
+    
     // This is a mock implementation - in a real app, we would make an actual API call
-    console.log(`Generating track with prompt: ${prompt}`);
+    console.log(`Generating track with prompt: ${limitedPrompt}`);
     
     // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    await new Promise(resolve => setTimeout(resolve, 2000));
     
     // Mock response
-    const mockResponse: MubertGenerateResponse = {
+    return {
       success: true,
-      trackUrl: "https://assets.mixkit.co/music/preview/mixkit-tech-house-vibes-130.mp3", // Sample track URL
+      trackUrl: "https://assets.mixkit.co/music/preview/mixkit-tech-house-vibes-130.mp3",
       metadata: {
-        title: generateMockTitle(prompt),
-        genre: generateMockGenre(prompt),
-        mood: generateMockMood(prompt),
+        title: generateMockTitle(limitedPrompt),
+        genre: generateMockGenre(limitedPrompt),
+        mood: generateMockMood(limitedPrompt),
         duration: 180 // 3 minutes
       }
     };
-    
-    return mockResponse;
   } catch (error) {
     console.error("Failed to generate track:", error);
     return {
       success: false,
       trackUrl: "",
-      metadata: { title: "", genre: "" },
-      error: error instanceof Error ? error.message : "Unknown error occurred"
+      metadata: {
+        title: "",
+        genre: ""
+      },
+      error: error instanceof Error ? error.message : "Unknown error"
     };
   }
 };

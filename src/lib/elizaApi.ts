@@ -75,6 +75,11 @@ function extractPiApiParameters(userMessage: string, elizaText: string): {
     }
   }
   
+  // Limit prompt to 200 characters to avoid API errors
+  if (prompt.length > 200) {
+    prompt = prompt.substring(0, 197) + '...';
+  }
+  
   // Extract title from the message if possible
   const titleMatch = userMessage.match(/title:?\s*["']?([^"']+)["']?/i);
   const title = titleMatch ? titleMatch[1].trim() : '';

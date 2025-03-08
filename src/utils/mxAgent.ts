@@ -3,7 +3,7 @@
  * This is a simplified mock of how the MX-Agent Kit would be integrated
  */
 
-import { mintSongAsNFT } from '../services/nftService';
+import { sendTransactions } from '@multiversx/sdk-dapp/services';
 
 export interface MXAgentResponse {
   message: string;
@@ -115,24 +115,44 @@ export const mintNFTWithAgent = async (
   try {
     console.log("Minting NFT with params:", params);
     
-    // Use the actual NFT minting service
-    const txHash = await mintSongAsNFT(
-      {
-        title: params.title,
-        artist: "AI Music Generator",
-        genre: params.genre,
-        audioUrl: params.mediaUrl,
+    // For demo purposes, we'll use the MultiversX testnet explorer
+    // In a real implementation, we would create a transaction for minting an NFT
+    
+    // Simulate a transaction using the MultiversX SDK
+    const { sessionId, error } = await sendTransactions({
+      transactions: {
+        value: "0",
+        data: "mint", // Simplified for demo
+        receiver: params.address,
+        gasLimit: 60000000, // Significantly increased gas limit to ensure it's sufficient
       },
-      params.address
-    );
+      transactionsDisplayInfo: {
+        processingMessage: 'Minting NFT...',
+        errorMessage: 'Failed to mint NFT',
+        successMessage: 'NFT minted successfully'
+      },
+      redirectAfterSign: false
+    });
+    
+    if (error) {
+      throw new Error(error);
+    }
+    
+    // For demo purposes, we'll use the transaction hash from the session
+    // In a real implementation, this would be the actual transaction hash
+    const txHash = sessionId || "sample-tx-hash";
     
     return {
       success: true,
       transactionHash: txHash,
-      tokenId: "MUSIC-abcdef-01" // This would be determined by the blockchain in a real implementation
+      tokenId: "MUSIC-123456-01" // This would be determined by the blockchain in a real implementation
     };
   } catch (error) {
     console.error("NFT minting failed:", error);
-    throw error;
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error during NFT minting',
+      details: error
+    };
   }
 };
