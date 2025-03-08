@@ -6,6 +6,7 @@ import MusicPlayer from '@/components/MusicPlayer';
 import NFTMint from '@/components/NFTMint';
 import { mintNFTWithAgent } from '@/utils/mxAgent';
 import { Music, MessageSquare, Sparkles } from 'lucide-react';
+import { useGetAccountInfo } from '@multiversx/sdk-dapp/hooks';
 
 interface TrackData {
   url: string;
@@ -21,6 +22,7 @@ const Index = () => {
   const [track, setTrack] = useState<TrackData | null>(null);
   const [showWelcome, setShowWelcome] = useState(true);
   const [showChat, setShowChat] = useState(false);
+  const { address } = useGetAccountInfo();
 
   const handleMusicGenerated = (trackUrl: string, metadata: any) => {
     console.log('Music generated with URL:', trackUrl);
@@ -44,14 +46,14 @@ const Index = () => {
 
   const handleMintNFT = async () => {
     if (!track) return Promise.reject(new Error("No track to mint"));
+    if (!address) return Promise.reject(new Error("Wallet not connected"));
     
-    // In a real app, this would use the actual MultiversX wallet address
     return mintNFTWithAgent({
       title: track.metadata.title,
       description: `A unique AI-generated ${track.metadata.genre} track with ${track.metadata.mood || 'unique'} mood.`,
       mediaUrl: track.url,
       genre: track.metadata.genre,
-      address: "erd1qqqqqqqqqqqqqqqpqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzllls8a5w6u"
+      address: address
     });
   };
 
@@ -149,7 +151,14 @@ const Index = () => {
                 />
                 
                 {track && (
-                  <NFTMint onMint={handleMintNFT} />
+                  <NFTMint 
+                    songData={{
+                      title: track.metadata.title,
+                      artist: 'AI Generated',
+                      genre: track.metadata.genre,
+                      audioUrl: track.url,
+                    }}
+                  />
                 )}
               </div>
             </div>

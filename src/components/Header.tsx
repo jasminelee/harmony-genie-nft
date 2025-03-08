@@ -1,6 +1,6 @@
-
 import React from 'react';
 import { MusicIcon } from 'lucide-react';
+import ConnectWallet from './ConnectWallet';
 
 const Header: React.FC = () => {
   return (
@@ -11,9 +11,7 @@ const Header: React.FC = () => {
           <span className="font-semibold text-xl tracking-tight">harmony.genie</span>
         </div>
         <div className="flex items-center space-x-4">
-          <button className="px-4 py-1.5 rounded-full bg-secondary text-secondary-foreground font-medium hover:bg-secondary/90 transition-all duration-250 ease-in-out">
-            Connect Wallet
-          </button>
+          <ConnectWallet />
         </div>
       </div>
     </header>

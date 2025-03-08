@@ -1,35 +1,62 @@
-
 import React, { useState } from 'react';
-import { CheckCircle, Loader, AlertCircle, ExternalLink } from 'lucide-react';
+import { CheckCircle, Loader, AlertCircle, ExternalLink, Wallet, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useGetAccountInfo, useGetLoginInfo } from '@multiversx/sdk-dapp/hooks';
+import { sendTransactions } from '@multiversx/sdk-dapp/services';
+import { refreshAccount } from '@multiversx/sdk-dapp/utils';
+import { 
+  WalletConnectLoginButton,
+  ExtensionLoginButton,
+  WebWalletLoginButton
+} from '@multiversx/sdk-dapp/UI';
 
 type MintStatus = 'idle' | 'minting' | 'success' | 'error';
 
 interface NFTMintProps {
-  onMint: () => Promise<any>;
+  songData: {
+    title: string;
+    artist: string;
+    genre: string;
+    audioUrl: string;
+    imageUrl?: string;
+  };
   className?: string;
 }
 
-const NFTMint: React.FC<NFTMintProps> = ({ onMint, className }) => {
+const NFTMint: React.FC<NFTMintProps> = ({ songData, className }) => {
   const [status, setStatus] = useState<MintStatus>('idle');
   const [txHash, setTxHash] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showWalletOptions, setShowWalletOptions] = useState(false);
+  const { address } = useGetAccountInfo();
+  const { isLoggedIn } = useGetLoginInfo();
 
   const handleMint = async () => {
+    if (!isLoggedIn || !address) {
+      setError('Please connect your wallet first');
+      return;
+    }
+
     try {
       setStatus('minting');
-      // In a real app, this would actually mint the NFT on MultiversX
-      const result = await onMint();
       
-      // Mock successful response with transaction hash
+      // This is a placeholder for actual NFT minting
+      // In a real implementation, you would create a transaction for minting an NFT
+      
+      // For demo purposes, we'll simulate a successful mint after a delay
       setTimeout(() => {
-        setTxHash('0x123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef');
+        setTxHash('sample-tx-hash');
         setStatus('success');
       }, 2000);
+      
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to mint NFT');
       setStatus('error');
     }
+  };
+
+  const toggleWalletOptions = () => {
+    setShowWalletOptions(!showWalletOptions);
   };
 
   return (
@@ -42,12 +69,63 @@ const NFTMint: React.FC<NFTMintProps> = ({ onMint, className }) => {
             <p className="text-sm text-muted-foreground">
               Mint your generated music as a unique NFT on the MultiversX blockchain.
             </p>
-            <button
-              onClick={handleMint}
-              className="w-full py-2.5 px-4 rounded-lg bg-music-primary text-white hover:bg-music-primary/90 transition-all-250 flex items-center justify-center"
-            >
-              Mint this track
-            </button>
+            {isLoggedIn ? (
+              <button
+                onClick={handleMint}
+                className="w-full py-2.5 px-4 rounded-lg bg-music-primary text-white hover:bg-music-primary/90 transition-all-250 flex items-center justify-center space-x-2"
+              >
+                <span>Mint this track</span>
+              </button>
+            ) : (
+              <div className="relative">
+                <button
+                  onClick={toggleWalletOptions}
+                  className="w-full py-2.5 px-4 rounded-lg bg-music-primary text-white hover:bg-music-primary/90 transition-all-250 flex items-center justify-center space-x-2"
+                >
+                  <span>Connect wallet to mint</span>
+                  <Wallet className="h-4 w-4 mr-1" />
+                  {showWalletOptions ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
+                </button>
+
+                {showWalletOptions && (
+                  <div className="absolute left-0 right-0 mt-2 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
+                    <div className="py-1" role="menu" aria-orientation="vertical">
+                      <div className="px-3 py-2 text-xs font-medium text-gray-500">
+                        Select a wallet
+                      </div>
+                      
+                      <div className="px-2 py-1">
+                        <ExtensionLoginButton
+                          callbackRoute="/"
+                          buttonClassName="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                          loginButtonText="MultiversX DeFi Wallet"
+                        />
+                      </div>
+                      
+                      <div className="px-2 py-1">
+                        <WalletConnectLoginButton 
+                          callbackRoute="/"
+                          buttonClassName="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                          loginButtonText="xPortal Mobile App"
+                        />
+                      </div>
+                      
+                      <div className="px-2 py-1">
+                        <WebWalletLoginButton 
+                          callbackRoute="/"
+                          buttonClassName="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                          loginButtonText="Web Wallet"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -70,7 +148,7 @@ const NFTMint: React.FC<NFTMintProps> = ({ onMint, className }) => {
             </p>
             
             <a
-              href={`https://explorer.multiversx.com/transactions/${txHash}`}
+              href={`https://testnet-explorer.multiversx.com/transactions/${txHash}`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-xs text-music-primary hover:text-music-primary/80 flex items-center space-x-1"

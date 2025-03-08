@@ -19,4 +19,18 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  optimizeDeps: {
+    esbuildOptions: {
+      // Node.js global to browser globalThis
+      define: {
+        global: 'globalThis',
+      },
+    },
+  },
+  build: {
+    rollupOptions: {
+      // Make sure to externalize deps that shouldn't be bundled
+      // into your library
+    },
+  },
 }));

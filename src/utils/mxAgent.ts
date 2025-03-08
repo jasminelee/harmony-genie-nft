@@ -1,4 +1,3 @@
-
 /**
  * MultiversX Agent Integration
  * This is a simplified mock of how the MX-Agent Kit would be integrated
@@ -114,10 +113,15 @@ export const mintNFTWithAgent = async (
   try {
     console.log("Minting NFT with params:", params);
     
+    // In a real implementation, this would:
+    // 1. Create the NFT metadata
+    // 2. Upload the media to IPFS or other storage
+    // 3. Call the MultiversX blockchain to mint the NFT
+    
     // Simulate API delay for minting transaction
     await new Promise(resolve => setTimeout(resolve, 2000));
     
-    // Mock transaction hash
+    // Mock transaction hash - in a real implementation, this would be the actual transaction hash
     const txHash = "0x" + Array.from({length: 64}, () => 
       Math.floor(Math.random() * 16).toString(16)).join('');
     
