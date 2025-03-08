@@ -27,6 +27,10 @@ const NFTMint: React.FC<NFTMintProps> = ({ songData, className }) => {
   const [txHash, setTxHash] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showWalletOptions, setShowWalletOptions] = useState(false);
+  const [nftDetails, setNftDetails] = useState<{
+    tokenId: string;
+    collection: string;
+  } | null>(null);
   const { address } = useGetAccountInfo();
   const { isLoggedIn } = useGetLoginInfo();
 
@@ -53,6 +57,10 @@ const NFTMint: React.FC<NFTMintProps> = ({ songData, className }) => {
       
       if (result.success) {
         setTxHash(result.transactionHash);
+        setNftDetails({
+          tokenId: result.tokenId,
+          collection: result.collection
+        });
         setStatus('success');
       } else {
         throw new Error(result.error || 'NFT minting failed');
@@ -91,6 +99,8 @@ const NFTMint: React.FC<NFTMintProps> = ({ songData, className }) => {
     setStatus('idle');
     // Clear any error messages
     setError(null);
+    // Clear NFT details
+    setNftDetails(null);
   };
 
   return (
@@ -194,6 +204,13 @@ const NFTMint: React.FC<NFTMintProps> = ({ songData, className }) => {
             <p className="text-xs text-muted-foreground text-center mt-1 mb-3">
               Your music is now immortalized on the MultiversX blockchain
             </p>
+            
+            {nftDetails && (
+              <div className="text-xs text-center mb-3">
+                <p className="font-medium">Collection: {nftDetails.collection}</p>
+                <p className="font-medium">Token ID: {nftDetails.tokenId}</p>
+              </div>
+            )}
             
             <a
               href={`https://testnet-explorer.multiversx.com/transactions/${txHash}`}

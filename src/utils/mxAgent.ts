@@ -115,16 +115,47 @@ export const mintNFTWithAgent = async (
   try {
     console.log("Minting NFT with params:", params);
     
-    // For demo purposes, we'll use the MultiversX testnet explorer
-    // In a real implementation, we would create a transaction for minting an NFT
+    // Use a fixed collection ID for all NFTs
+    // This should be replaced with your actual collection ID after you create it
+    // For example, if you created a collection with ticker HARM, it might be HARM-abcdef
+    const collectionId = "HARMONYX-0fc626";
+    const collectionIdHex = Buffer.from(collectionId).toString('hex');
     
-    // Simulate a transaction using the MultiversX SDK
+    // Convert metadata to a JSON string
+    const attributes = JSON.stringify({
+      title: params.title,
+      description: params.description,
+      genre: params.genre,
+      artist: "HarmonyX AI Music Generator",
+      createdAt: new Date().toISOString()
+    });
+    
+    // Convert to hex for the transaction
+    const attributesHex = Buffer.from(attributes).toString('hex');
+    
+    // Convert media URL to hex
+    const mediaUrlHex = Buffer.from(params.mediaUrl).toString('hex');
+    
+    // NFT name in hex
+    const nameHex = Buffer.from(params.title).toString('hex');
+    
+    // Quantity (1 for NFT)
+    const quantityHex = "01";
+    
+    // Royalties (5% = 500 out of 10000)
+    const royaltiesHex = "01f4"; // 500 in hex
+    
+    // Create the ESDTNFTCreate transaction data
+    // Format: ESDTNFTCreate@collection@quantity@name@royalties@hash@attributes@uri
+    const data = `ESDTNFTCreate@${collectionIdHex}@${quantityHex}@${nameHex}@${royaltiesHex}@@${attributesHex}@${mediaUrlHex}`;
+    
+    // Send the transaction
     const { sessionId, error } = await sendTransactions({
       transactions: {
         value: "0",
-        data: "mint", // Simplified for demo
-        receiver: params.address,
-        gasLimit: 60000000, // Significantly increased gas limit to ensure it's sufficient
+        data: data,
+        receiver: params.address, // NFT creation is sent to self
+        gasLimit: 60000000, // High gas limit for NFT operations
       },
       transactionsDisplayInfo: {
         processingMessage: 'Minting NFT...',
@@ -138,14 +169,12 @@ export const mintNFTWithAgent = async (
       throw new Error(error);
     }
     
-    // For demo purposes, we'll use the transaction hash from the session
-    // In a real implementation, this would be the actual transaction hash
-    const txHash = sessionId || "sample-tx-hash";
-    
+    // Return the transaction hash and other details
     return {
       success: true,
-      transactionHash: txHash,
-      tokenId: "MUSIC-123456-01" // This would be determined by the blockchain in a real implementation
+      transactionHash: sessionId || "sample-tx-hash",
+      tokenId: `${collectionId}-01`, // This would be determined by the blockchain in a real implementation
+      collection: collectionId
     };
   } catch (error) {
     console.error("NFT minting failed:", error);
