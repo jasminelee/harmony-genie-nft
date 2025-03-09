@@ -8,7 +8,7 @@ const Header: React.FC = () => {
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <MusicIcon className="h-6 w-6 text-music-primary" />
-          <span className="font-semibold text-xl tracking-tight">harmony.genie</span>
+          <span className="font-semibold text-xl tracking-tight">harmonyX</span>
         </div>
         <div className="flex items-center space-x-4">
           <ConnectWallet />

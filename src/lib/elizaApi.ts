@@ -2,7 +2,7 @@
  * Eliza API Client
  * 
  * This file provides utilities for interacting with the Eliza AI agent
- * for music generation in the harmony-genie-nft application.
+ * for music generation in the harmonyX application.
  */
 
 import { generateMusic, extractMusicParameters } from './piApiClient';
