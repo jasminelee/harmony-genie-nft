@@ -1,89 +1,83 @@
-# Welcome to your Lovable project
+# Eliza AI Agent Integration for HarmonyX
 
-## Project info
+This document provides instructions on how to set up and use the Eliza AI agent integration for the HarmonyX daoo.
 
-**URL**: https://lovable.dev/projects/b3fccc28-6c7f-4e4a-80ce-eb73b28ebe78
+## Overview
 
-## Harmony Genie NFT with Eliza AI Agent
+The HarmonyX application uses the Eliza AI agent from the mx-agent-kit to generate music based on user descriptions. Users can interact with the AI agent through a chat interface, and the agent will generate music that can be minted as NFTs on MultiversX.
 
-This project integrates the Eliza AI agent from the mx-agent-kit to generate music based on user descriptions. Users can interact with the AI agent through a chat interface, and the agent will generate music that can be minted as NFTs.
+## Prerequisites
 
-### Quick Start with Eliza AI Agent
+- Node.js 23.3.0
+- npm
+- Eliza AI agent from mx-agent-kit
 
-To start both the Eliza AI agent and the Harmony Genie NFT application, run:
+## Setup Instructions
 
+## ⚙️ Local Setup  
+
+### Step 0: Run the Setup Script  
+Execute the setup script to install dependencies from the mx-agent-kit directory::  
 ```sh
-./start-harmony-genie.sh
+cd mx-agent-kit
+chmod +x setup.sh
+./setup.sh
 ```
 
-This will start:
-- The Eliza AI agent on port 3000 (http://localhost:3000)
-- The Eliza dashboard on port 5173 (http://localhost:5173)
-- The Harmony Genie NFT application on port 5174 (http://localhost:5174)
 
-For detailed instructions on setting up and using the Eliza AI agent integration, see [ELIZA_INTEGRATION.md](./ELIZA_INTEGRATION.md).
+### 1. Start the Eliza AI Agent
 
-## How can I edit this code?
+First, you need to start the Eliza AI agent from the mx-agent-kit directory:
 
-There are several ways of editing your application.
+```bash
+cd mx-agent-kit/eliza
+npm install
+pnpm run start
+```
 
-**Use Lovable**
+This will start the Eliza AI agent on port 3000 by default, and the Eliza dashboard will be available at http://localhost:5173.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/b3fccc28-6c7f-4e4a-80ce-eb73b28ebe78) and start prompting.
+Adjust the port if your Eliza agent is running on a different port.
 
-Changes made via Lovable will be committed automatically to this repo.
+### 2. Start AI Gateway
 
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
+In another terminal, , start the **AI Gateway**:  
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+cd mx-agent-kit/gateway
+npm run dev:node
+```
+This will start the application on port 5174 by default. You can access it at http://localhost:5174.
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### 3. Start the HarmonyX Application
 
-# Step 3: Install the necessary dependencies.
-npm i
+Start the HarmonyXapplication:
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```bash
+npm install
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+This will start the application on port 8080 by default.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Using the Dapp
 
-**Use GitHub Codespaces**
+1. Open the HarmonyX application in your browser at http://localhost:8080.
+2. Navigate to the chat interface.
+3. Describe the kind of music you want to generate. For example:
+   - "I want a relaxing ambient track with piano and soft synths."
+   - "Generate an upbeat pop song with a catchy chorus."
+   - "Create a lo-fi hip hop beat with jazzy samples."
+4. The AI agent will respond and generate music based on your description.
+5. Once the music is generated, you can mint it as an NFT.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Troubleshooting
 
-## What technologies are used for this project?
+If you encounter issues with the integration, check the following:
 
-This project is built with .
+1. Make sure the Eliza AI agent is running and accessible at the configured port (default: 3000).
+2. Check the browser console for any error messages.
+3. If the agent is not responding, try restarting both the agent and the application.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-- Eliza AI Agent (for music generation)
+## Last Step
 
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/b3fccc28-6c7f-4e4a-80ce-eb73b28ebe78) and click on Share -> Publish.
-
-## I want to use a custom domain - is that possible?
-
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+Profit!!
